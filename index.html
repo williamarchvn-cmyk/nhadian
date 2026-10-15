@@ -528,6 +528,9 @@ button.drop:hover{border-color:var(--accent);color:var(--accent)}
 /* keyless basemap looks: OpenStreetMap tiles recoloured (used when no CARTO key is configured) */
 .tiles-gray{filter:grayscale(1) contrast(.9) brightness(1.06)}
 .tiles-dark{filter:invert(1) hue-rotate(180deg) brightness(.92) contrast(.88) saturate(.6)}
+/* Leaflet 1.9.4 blends tiles with mix-blend-mode:plus-lighter; on phones (Safari / in-app WebViews) overlapping zoom levels
+   add up to a washed-out or blank map, so tiles are painted normally */
+.leaflet-container img.leaflet-tile{mix-blend-mode:normal}
 </style>
 </head>
 <body>
@@ -841,12 +844,14 @@ const DEF_V = {
   cart: [], notes: {}, rating: {}, checks: {}, visits: [], onsite: {}, places: [], saved: [],
   weights: { price: 4, area: 2, legal: 5, access: 3, loc: 3, house: 2, mine: 2 },
   fin: { lid: '', price: '4,2', regBase: '', broker: '0', pitPct: '2', buyerPIT: false, other: '3', repair: '0', own: '1,5', years: '20', r1: '9,5', m1: '12', r2: '12,5', method: 'annuity', income: '60', otherDebt: '0' },
-  mapStyle: 'sat', layers: { color: 'legal', poi: true, ov: {} },
+  mapStyle: 'sat', styleVer: 2, layers: { color: 'legal', poi: true, ov: {} },
 };
 function loadV() {
   const s = lsGet(LS_V, {}); const v = Object.assign(clone(DEF_V), s);
   ['fin', 'weights', 'layers'].forEach(k => v[k] = Object.assign(clone(DEF_V[k]), s[k] || {}));
-  if (!STYLES[v.mapStyle]) v.mapStyle = 'sat';
+  // one-time reset: phones that saved an old basemap (CARTO styles now blocked) or an automatic fallback start on satellite again
+  if (!STYLES[v.mapStyle] || s.styleVer !== 2 || s.styleAuto) v.mapStyle = 'sat';
+  v.styleVer = 2; delete v.styleAuto;
   return v;
 }
 const DEF_F = { types: [], pMin: '', pMax: '', aMin: '', fMin: '', access: '', legal: '', beds: '', inView: false, near: '', status: 'active', broker: '' };
@@ -2204,7 +2209,7 @@ function App() {
       const s = tileStat.current; if (s.ok > 0) return;
       tried.current.add(V.mapStyle);
       const next = FALLBACK_ORDER.find(k => !tried.current.has(k));
-      if (s.err > 0 && next) { upV(v => { v.mapStyle = next; }); toast('Nguồn bản đồ không phản hồi, đã chuyển sang nền ' + STYLES[next].name, 4000); }
+      if (next) { upV(v => { v.mapStyle = next; v.styleAuto = true; }); toast('Nguồn bản đồ không phản hồi, đã chuyển sang nền ' + STYLES[next].name, 4000); }
       else setTileWarn(true);
     }, 8000);
     return () => clearTimeout(t);
@@ -2287,7 +2292,7 @@ function App() {
 
   const layersPanel = html`<div className="dropdown glass">
     <h4>Bản đồ nền</h4>
-    <div className="styles">${Object.entries(STYLES).map(([k, s]) => html`<button key=${k} className="style-opt" aria-pressed=${V.mapStyle === k} onClick=${() => { tried.current = new Set(); upV(v => { v.mapStyle = k; }); }}><i style=${{ background: s.prev }}></i>${s.name}</button>`)}</div>
+    <div className="styles">${Object.entries(STYLES).map(([k, s]) => html`<button key=${k} className="style-opt" aria-pressed=${V.mapStyle === k} onClick=${() => { tried.current = new Set(); upV(v => { v.mapStyle = k; v.styleAuto = false; }); }}><i style=${{ background: s.prev }}></i>${s.name}</button>`)}</div>
     <h4>Hiển thị</h4>
     <label><input type="checkbox" checked=${V.layers.color === 'legal'} onChange=${e => upV(v => { v.layers.color = e.target.checked ? 'legal' : 'none'; })} /> Tô màu ghim theo pháp lý</label>
     <label><input type="checkbox" checked=${showPoi} onChange=${e => setShowPoi(e.target.checked)} /> Tiện ích quanh căn đang xem</label>
