@@ -1057,13 +1057,12 @@ function FilterPanel({ f, setF, hasPlace, saved, onSave, onApply, brokers }) {
 }
 
 /* ================= detail sheet ================= */
-function DetailSheet({ l, V, upV, admin, poi, onClose, onCart, onEdit, onDelete, onAddPhotos, onSchedule, onFinance, toast, copy, showPoi, setShowPoi, broker, hasBrokers, onZalo, onPhoto }) {
+function DetailSheet({ l, V, upV, admin, poi, onClose, onCart, onEdit, onDelete, onAddPhotos, onFinance, toast, copy, showPoi, setShowPoi, broker, hasBrokers, onZalo, onPhoto }) {
   const [over, setOver] = useState(false); const pickRef = useRef(null);
   const isFiles = e => e.dataTransfer && [...(e.dataTransfer.types || [])].includes('Files');
   const dnd = admin ? { onDragEnter: e => { if (isFiles(e)) { e.preventDefault(); e.stopPropagation(); setOver(true); } }, onDragOver: e => { if (isFiles(e)) { e.preventDefault(); e.stopPropagation(); e.dataTransfer.dropEffect = 'copy'; } }, onDragLeave: e => { if (!e.currentTarget.contains(e.relatedTarget)) setOver(false); }, onDrop: e => { if (!isFiles(e)) return; e.preventDefault(); e.stopPropagation(); setOver(false); onAddPhotos(e.dataTransfer.files); } } : {};
   const m = metrics(l), lg = legalOf(l), d = distTo(l), g = l.legal || {};
   const checks = V.checks[l.id] || [], photos = l.photos || [], hist = l.priceHistory || [];
-  const myVisits = V.visits.filter(v => v.lid === l.id && !v.done);
   const near = useMemo(() => { if (!poi || !poi.items) return []; const best = {}; poi.items.forEach(p => { (best[p.cat] = best[p.cat] || { first: p, n: 0 }).n++; }); return Object.entries(best).sort((a, b) => a[1].first.d - b[1].first.d); }, [poi]);
   const fact = (k, v) => html`<div className="fact" key=${k}><dt>${k}</dt><dd>${v}</dd></div>`;
   const inCart = V.cart.includes(l.id);
@@ -1145,13 +1144,11 @@ function DetailSheet({ l, V, upV, admin, poi, onClose, onCart, onEdit, onDelete,
       </div>
       <div className="sec">
         <div className="actions">
-          <button className="btn primary" onClick=${onSchedule}>Hẹn đi xem</button>
-          <button className="btn" onClick=${onFinance}>Tính chi phí, khoản vay</button>
+          <button className="btn primary" onClick=${onFinance}>Tính chi phí, khoản vay</button>
           <a className="btn" href=${`https://www.google.com/maps?q=${l.lat},${l.lng}`} target="_blank" rel="noopener">Google Maps ↗</a>
           <a className="btn" href=${`https://www.google.com/maps/dir/?api=1&destination=${l.lat},${l.lng}`} target="_blank" rel="noopener">Chỉ đường ↗</a>
           <button className="btn" onClick=${share}>Sao chép thông tin căn</button>
         </div>
-        ${myVisits.length ? html`<p className="small" style=${{ margin: 0 }}>Đã hẹn xem: ${myVisits.map(v => fmtWhen(v.at)).join(', ')}</p>` : null}
         ${l.contact ? html`<div className="kv"><span>Liên hệ</span><b style=${{ userSelect: 'all' }}>${l.contact}</b></div>` : null}
       </div>
     </div></aside>`;
@@ -1256,32 +1253,6 @@ function orderRoute(ls) {
   const rest = ls.filter(l => l && l.lat != null).slice(), out = []; let cur = myPlace() ? [myPlace().lat, myPlace().lng] : rest[0] ? [rest[0].lat, rest[0].lng] : null;
   while (rest.length) { let bi = 0, bd = 1e9; rest.forEach((l, i) => { const d = haversine(cur, [l.lat, l.lng]); if (d < bd) { bd = d; bi = i; } }); const n = rest.splice(bi, 1)[0]; out.push(n); cur = [n.lat, n.lng]; }
   return out;
-}
-function VisitsPanel({ data, V, upV, openListing }) {
-  const byId = id => data.listings.find(l => l.id === id);
-  const vs = V.visits.filter(v => byId(v.lid)).sort((a, b) => a.at.localeCompare(b.at));
-  const upcoming = vs.filter(v => !v.done), done = vs.filter(v => v.done), byDay = {};
-  upcoming.forEach(v => (byDay[v.at.slice(0, 10)] = byDay[v.at.slice(0, 10)] || []).push(v));
-  const route = list => { const pts = orderRoute(list.map(v => byId(v.lid))); if (!pts.length) return '#'; const dest = pts[pts.length - 1], way = pts.slice(0, -1), o = myPlace() ? `&origin=${myPlace().lat},${myPlace().lng}` : ''; return `https://www.google.com/maps/dir/?api=1${o}&destination=${dest.lat},${dest.lng}${way.length ? '&waypoints=' + way.map(p => p.lat + ',' + p.lng).join('|') : ''}&travelmode=driving`; };
-  const row = v => { const l = byId(v.lid), dt = new Date(v.at); return html`<div className=${'visit' + (v.done ? ' done' : '')} key=${v.id}>
-    <div className="when">${dt.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}<small>${dt.toLocaleDateString('vi-VN', { weekday: 'short', day: '2-digit', month: '2-digit' })}</small></div>
-    <div style=${{ minWidth: 0 }}><button className="linkish" onClick=${() => openListing(l.id)}>${l.title}</button><div className="small muted">${l.address || ''} · ${money(l.price)}</div>${v.note ? html`<div className="small">${v.note}</div>` : null}</div>
-    <span className="inline"><button className="btn sm" onClick=${() => upV(x => { const t = x.visits.find(y => y.id === v.id); t.done = !t.done; })}>${v.done ? 'Hoàn tác' : 'Đã xem'}</button><button className="btn sm ghost" aria-label="Xóa lịch" onClick=${() => upV(x => { x.visits = x.visits.filter(y => y.id !== v.id); })}><${Icon} n="close" /></button></span></div>`; };
-  const targets = [...new Set([...done.map(v => v.lid), ...V.cart])].map(byId).filter(Boolean);
-  return html`
-    <p className="lead">Hẹn lịch, đi theo lộ trình gọn nhất trong ngày, và chấm điểm từng căn ngay tại chỗ.</p>
-    <div className="panel"><h3>Sắp tới</h3>
-      ${Object.keys(byDay).length ? Object.entries(byDay).map(([day, list]) => html`<div key=${day}><div className="inline" style=${{ justifyContent: 'space-between' }}><b>${new Date(day + 'T00:00').toLocaleDateString('vi-VN', { weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric' })}</b><a className="btn sm" href=${route(list)} target="_blank" rel="noopener">Lộ trình ${list.length} căn trên Google Maps ↗</a></div>${list.map(row)}</div>`) : html`<div className="empty"><h3>Chưa có lịch hẹn</h3><p>Mở một căn trên bản đồ và bấm "Hẹn đi xem".</p></div>`}
-      ${myPlace() ? null : html`<p className="small muted" style=${{ margin: 0 }}>Lộ trình sẽ xuất phát từ "điểm của tôi" nếu bạn đặt điểm trên bản đồ.</p>`}
-    </div>
-    ${done.length ? html`<div className="panel"><h3>Đã xem</h3>${done.map(row)}</div>` : null}
-    <div className="panel"><h3>Kiểm tra tại chỗ <span className="sub">Các căn trong giỏ và đã xem</span></h3>
-      ${targets.length ? targets.map(l => { const oc = V.onsite[l.id] || {}; const bads = Object.values(oc).filter(x => x === 'r').length, oks = Object.values(oc).filter(x => x === 'g').length;
-        return html`<details className="acc" key=${l.id}><summary><span>${short(l.title, 64)}</span><span className="small muted num">${oks} tốt · ${bads} xấu · ${'★'.repeat(V.rating[l.id] || 0) || 'chưa chấm'}</span></summary><div className="acc-in">
-          <div>${ONSITE.map((t, i) => html`<div className="oc-row" key=${i}><span>${t}</span><span className="seg">${[['g', 'Tốt'], ['y', 'Lưu ý'], ['r', 'Xấu']].map(([k, tt]) => html`<button key=${k} className=${k + (oc[i] === k ? ' on' : '')} onClick=${() => upV(x => { const o = x.onsite[l.id] || (x.onsite[l.id] = {}); o[i] = o[i] === k ? null : k; })}>${tt}</button>`)}</span></div>`)}</div>
-          <${Stars} value=${V.rating[l.id]} onChange=${s => upV(x => { x.rating[l.id] = s; })} />
-          <textarea className="input" value=${V.notes[l.id] || ''} placeholder="Ghi chú khi xem nhà" onChange=${e => { const t = e.target.value; upV(x => { x.notes[l.id] = t; }); }}></textarea></div></details>`; }) : html`<p className="small muted">Thêm căn vào giỏ hoặc hẹn xem để chấm điểm tại chỗ.</p>`}
-    </div>`;
 }
 
 /* ================= photos & data ================= */
@@ -2272,11 +2243,11 @@ function App() {
   const ovsRaw = data.settings.overlays || [];
   const ovs = alignDraft ? ovsRaw.map(o => o.id === alignDraft.id ? alignDraft : o) : ovsRaw;
 
-  const cartCount = V.cart.filter(byId).length, visitCount = V.visits.filter(v => !v.done && byId(v.lid)).length;
+  const cartCount = V.cart.filter(byId).length;
   const fc = activeFilterCount(f);
-  const TOOLS = { compare: 'Giỏ hàng và so sánh', finance: 'Tài chính', visits: 'Lịch xem nhà', brokers: 'Môi giới', admin: 'Quản lý' };
+  const TOOLS = { compare: 'Giỏ hàng và so sánh', finance: 'Tài chính', brokers: 'Môi giới', admin: 'Quản lý' };
   const showBrokersTab = ADMIN || data.brokers.some(b => b.active);
-  const navItems = [['compare', 'Giỏ & so sánh', 'cart', cartCount], ['finance', 'Tài chính', 'calc', 0], ['visits', 'Lịch xem', 'cal', visitCount], ...(showBrokersTab ? [['brokers', 'Môi giới', 'users', 0]] : []), ...(ADMIN ? [['admin', 'Quản lý', 'gear', 0]] : [])];
+  const navItems = [['compare', 'Giỏ & so sánh', 'cart', cartCount], ['finance', 'Tài chính', 'calc', 0], ...(showBrokersTab ? [['brokers', 'Môi giới', 'users', 0]] : []), ...(ADMIN ? [['admin', 'Quản lý', 'gear', 0]] : [])];
   const meColor = useMemo(() => cssv('--me') || '#1a73e8', []);
   const selPois = sel && showPoi && selPoi && selPoi.status === 'ok' ? selPoi.items.slice(0, 60) : [];
   const formOpen = form && !form._hidden;
@@ -2362,7 +2333,7 @@ function App() {
     </div>
 
     ${!listOpen ? html`<button className="mobile-list-btn glass" onClick=${() => setListOpen(true)}><${Icon} n="list" /> ${filtered.length} căn · Xem danh sách</button>` : null}
-    <div className="legend glass">${V.layers.color === 'legal' ? html`<span><i style=${{ background: 'var(--ok)' }}></i>Pháp lý ổn</span><span><i style=${{ background: 'var(--warn)' }}></i>Cần kiểm tra</span><span><i style=${{ background: 'var(--bad)' }}></i>Rủi ro cao</span>` : null}<span><i style=${{ background: 'var(--accent)' }}></i>Trong giỏ</span>${ADMIN ? html`<span className="muted">· Chuột phải lên bản đồ để thêm điểm</span>` : null}</div>
+    <div className="legend glass">${V.layers.color === 'legal' ? html`<span><i style=${{ background: 'var(--ok)' }}></i>Pháp lý ổn</span>` : null}<span><i style=${{ background: 'var(--accent)' }}></i>Trong giỏ</span>${ADMIN ? html`<span className="muted">· Chuột phải lên bản đồ để thêm điểm</span>` : null}</div>
 
     ${pick ? html`<div className="hint glass"><span>${pick.kind === 'new' ? 'Chạm vào bản đồ tại vị trí căn nhà mới' : pick.kind === 'listing' ? 'Chạm vào bản đồ tại vị trí căn nhà' : 'Chạm vào bản đồ để đặt điểm của bạn'}</span><button onClick=${() => { if (pick.kind === 'listing') setForm(d => d && ({ ...d, _hidden: false })); setPick(null); }}>Hủy</button></div>` : null}
     ${dragFiles === 'map' && ADMIN && !formOpen && !bform ? html`<div className="drop-overlay"><div className="glass"><b>Thả ảnh vào đúng vị trí căn nhà trên bản đồ</b><span>App tạo điểm mới tại chỗ thả và tải ảnh lên Supabase. Ảnh chụp bằng điện thoại có GPS sẽ được gợi ý vị trí.</span></div></div>` : null}
@@ -2379,17 +2350,13 @@ function App() {
       broker=${brokerById(selL.brokerId)} hasBrokers=${zaloBrokers.length > 0} onZalo=${() => openZalo(selL.id, selL.brokerId)} onPhoto=${i => setLightbox({ photos: selL.photos, index: i })}
       onClose=${() => setSel(null)} onCart=${() => toggleCart(selL.id)} onEdit=${() => openForm(selL.id)}
       onDelete=${() => deleteListing(selL.id)} onAddPhotos=${files => photosToListing(selL.id, files)}
-      onFinance=${() => { upV(v => { v.fin.lid = selL.id; }); setTool('finance'); }}
-      onSchedule=${() => { const t = new Date(Date.now() + 864e5); t.setHours(9, 0, 0, 0); let at = new Date(t.getTime() - t.getTimezoneOffset() * 6e4).toISOString().slice(0, 16), note = '';
-        setModal({ title: 'Hẹn đi xem nhà', narrow: true, body: html`<p style=${{ margin: 0 }}><b>${selL.title}</b><br /><span className="small muted">${selL.address || ''}</span></p><${Field} label="Thời gian"><input className="input" type="datetime-local" defaultValue=${at} onChange=${e => { at = e.target.value; }} /><//><${Field} label="Ghi chú"><input className="input" placeholder="vd: hẹn chủ nhà, mang thước đo" onChange=${e => { note = e.target.value; }} /><//>`,
-          foot: [['Hủy', null], ['Lưu lịch hẹn', () => { if (!at) return; upV(v => { v.visits.push({ id: uid(), lid: selL.id, at, note: note.trim(), done: false }); }); toast('Đã thêm vào lịch xem nhà'); }]] }); }} />` : null}
+      onFinance=${() => { upV(v => { v.fin.lid = selL.id; }); setTool('finance'); }} />` : null}
 
     ${tool ? html`<div className="backdrop" onMouseDown=${e => { if (e.target === e.currentTarget) setTool(null); }}><section className="tool" aria-label=${TOOLS[tool]}>
       <div className="tool-head"><h2>${TOOLS[tool]}</h2><button className="icon-btn" onClick=${() => setTool(null)} aria-label="Đóng"><${Icon} n="close" /></button></div>
       <div className="tool-body">
         ${tool === 'compare' ? html`<${ComparePanel} data=${data} V=${V} upV=${upV} openListing=${id => openListing(id)} toggleCart=${toggleCart} confirm=${confirm} />` : null}
         ${tool === 'finance' ? html`<${FinancePanel} data=${data} V=${V} upV=${upV} />` : null}
-        ${tool === 'visits' ? html`<${VisitsPanel} data=${data} V=${V} upV=${upV} openListing=${id => openListing(id)} />` : null}
         ${tool === 'brokers' ? html`<${BrokersPanel} brokers=${data.brokers} listings=${data.listings} admin=${ADMIN} state=${brokerState} toast=${toast}
           onAdd=${() => setBform(blankBroker())} onEdit=${b => setBform({ ...b, phone: b.phone ? fmtPhone(b.phone) : '', zalo: b.zalo && !/^https:/i.test(b.zalo) ? fmtPhone(b.zalo) : b.zalo || '', years: b.years == null ? '' : String(b.years), sortOrder: String(b.sortOrder || 0), _new: false })}
           onDelete=${deleteBroker} onToggle=${toggleBroker}
