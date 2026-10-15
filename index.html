@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Nhà Phố Dĩ An</title>
+<title>Nhà Liền Thổ Dĩ An</title>
 <meta name="description" content="Bản đồ nhà liền thổ khu Dĩ An: tìm, lọc, so sánh, kiểm tra pháp lý, tính chi phí và khoản vay.">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&display=swap">
@@ -17,8 +17,8 @@
    file này công khai trên Vercel, ai cũng đọc được.
    ===================================================================== */
 window.APP_CONFIG = {
-  supabaseUrl: 'https://rwqxfqqvjenxvmritxtg.supabase.co',
-  supabaseAnonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ3cXhmcXF2amVueHZtcml0eHRnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIwMTE4NTEsImV4cCI6MjEwNzU4Nzg1MX0.5jY07XJW8oV8nfb3iIWgzlbPHRJ_26WyG3dtyYdY6Tk',
+  supabaseUrl: 'https://YOUR-PROJECT-ID.supabase.co',
+  supabaseAnonKey: 'YOUR-PUBLISHABLE-OR-ANON-KEY',
   photoBucket: 'listing-photos'
 };
 </script>
@@ -519,6 +519,12 @@ button.drop:hover{border-color:var(--accent);color:var(--accent)}
   .bc-facts{grid-template-columns:1fr 1fr}
   .lb-nav{width:40px;height:52px;font-size:28px}
 }
+/* Chat Zalo + Thêm điểm sit in a column left of the zoom / locate column, bottom-aligned with them */
+.bottomright{grid-template-columns:auto auto;align-items:end;column-gap:10px}
+.bottomright>.zalo-fab{grid-column:1;grid-row:1}
+.bottomright>.addbtn{grid-column:1;grid-row:2}
+.bottomright>.zoomgrp{grid-column:2;grid-row:1}
+.bottomright>.locate{grid-column:2;grid-row:2}
 </style>
 </head>
 <body>
