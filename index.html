@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Nhà Liền Thổ Dĩ An</title>
+<title>Nhà Dĩ An</title>
 <meta name="description" content="Bản đồ nhà liền thổ khu Dĩ An: tìm, lọc, so sánh, kiểm tra pháp lý, tính chi phí và khoản vay.">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&display=swap">
@@ -148,7 +148,7 @@ h1,h2,h3,h4{font-family:var(--f-display);margin:0;letter-spacing:-.01em;text-wra
 .dropdown{position:absolute;top:calc(100% + 8px);right:0;border-radius:var(--r);padding:12px 14px;width:280px;max-width:calc(100vw - 24px);display:grid;gap:8px;max-height:calc(100vh - 90px);overflow:auto}
 .dropdown h4{font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-family:var(--f-body);font-weight:700;margin-top:4px}
 .dropdown label{display:flex;align-items:center;gap:8px;font-size:13.5px}
-.styles{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.styles{display:grid;grid-template-columns:repeat(2,1fr);gap:6px}
 .style-opt{border:2px solid transparent;background:var(--surface-2);border-radius:10px;padding:4px;font-size:11.5px;font-weight:600;color:var(--ink-2);display:grid;gap:3px;text-align:center}
 .style-opt i{display:block;height:38px;border-radius:7px;background-size:cover;background-position:center}
 .style-opt[aria-pressed="true"]{border-color:var(--accent);color:var(--ink)}
@@ -525,6 +525,9 @@ button.drop:hover{border-color:var(--accent);color:var(--accent)}
 .bottomright>.addbtn{grid-column:1;grid-row:2}
 .bottomright>.zoomgrp{grid-column:2;grid-row:1}
 .bottomright>.locate{grid-column:2;grid-row:2}
+/* keyless basemap looks: OpenStreetMap tiles recoloured (used when no CARTO key is configured) */
+.tiles-gray{filter:grayscale(1) contrast(.9) brightness(1.06)}
+.tiles-dark{filter:invert(1) hue-rotate(180deg) brightness(.92) contrast(.88) saturate(.6)}
 </style>
 </head>
 <body>
@@ -682,12 +685,12 @@ const PRECHECK = [
 ];
 const ONSITE = ['Thấm dột trần, tường', 'Vết nứt kết cấu, lún nền', 'Dấu vết ngập nước', 'Ánh sáng, thông gió', 'Tiếng ồn xung quanh', 'Hàng xóm, an ninh', 'Điện, nước, thoát nước', 'Hẻm thực tế (ô tô quay đầu?)', 'Sóng điện thoại, internet', 'Ranh giới khớp với sổ'];
 
+/* Basemaps: only two keyless choices, OpenStreetMap and Esri satellite imagery (default). */
+const ESRI = svc => 'https://server.arcgisonline.com/ArcGIS/rest/services/' + svc + '/MapServer/tile/{z}/{y}/{x}';
+const OSM_ATTR = '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>';
 const STYLES = {
-  positron: { name: 'Tối giản', url: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', sub: 'abcd', max: 20, attr: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions" target="_blank" rel="noopener">CARTO</a>', prev: 'linear-gradient(135deg,#f4f4f2,#e3e6e4)' },
-  voyager: { name: 'Chi tiết', url: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', sub: 'abcd', max: 20, attr: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions" target="_blank" rel="noopener">CARTO</a>', prev: 'linear-gradient(135deg,#f6efe2,#cfe3c9 60%,#aad3df)' },
-  osm: { name: 'OSM', url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png', sub: 'abc', max: 19, attr: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>', prev: 'linear-gradient(135deg,#f2efe9,#add19e 55%,#f8d38a)' },
-  dark: { name: 'Tối', url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', sub: 'abcd', max: 20, attr: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions" target="_blank" rel="noopener">CARTO</a>', prev: 'linear-gradient(135deg,#2b2d31,#141517)' },
-  sat: { name: 'Vệ tinh', url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', sub: 'abc', max: 19, attr: 'Ảnh vệ tinh &copy; Esri, Maxar, Earthstar Geographics', labels: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager_only_labels/{z}/{x}/{y}{r}.png', prev: 'linear-gradient(135deg,#3c4a2e,#6b6a4c 50%,#2e3b2b)' },
+  osm: { name: 'OSM', url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png', max: 19, attr: OSM_ATTR, prev: 'linear-gradient(135deg,#f2efe9,#add19e 55%,#f8d38a)' },
+  sat: { name: 'Vệ tinh', url: ESRI('World_Imagery'), max: 18, labels: [ESRI('Reference/World_Transportation'), ESRI('Reference/World_Boundaries_and_Places')], attr: 'Ảnh vệ tinh &copy; Esri, Maxar, Earthstar Geographics · Nhãn &copy; Esri, ' + OSM_ATTR, prev: 'linear-gradient(135deg,#3c4a2e,#6b6a4c 50%,#2e3b2b)' },
 };
 const DI_AN = [10.9045, 106.769];
 
@@ -938,11 +941,11 @@ function MapEvents({ onClick, onView, onContext }) {
   return null;
 }
 function BaseTiles({ k, nonce, onStatus }) {
-  const s = STYLES[k] || STYLES.positron;
+  const s = STYLES[k] || STYLES.sat;
   const ev = useMemo(() => ({ tileload: () => onStatus && onStatus('ok'), tileerror: () => onStatus && onStatus('err') }), [onStatus]);
   return html`
-    <${TileLayer} key=${k + ':' + nonce} url=${s.url} attribution=${s.attr} subdomains=${s.sub} maxZoom=${20} maxNativeZoom=${s.max} keepBuffer=${3} eventHandlers=${ev} />
-    ${s.labels ? html`<${TileLayer} key=${k + '-labels:' + nonce} url=${s.labels} subdomains="abcd" maxZoom=${20} maxNativeZoom=${20} pane="overlayPane" />` : null}`;
+    <${TileLayer} key=${k + ':' + nonce} url=${s.url} attribution=${s.attr} subdomains=${s.sub || 'abc'} maxZoom=${20} maxNativeZoom=${s.max} keepBuffer=${3} eventHandlers=${ev} />
+    ${(s.labels || []).map((u, i) => html`<${TileLayer} key=${k + '-labels' + i + ':' + nonce} url=${u} maxZoom=${20} maxNativeZoom=${s.max} pane="overlayPane" />`)}`;
 }
 function pinIcon(l, V, selId) {
   const lv = legalOf(l).lv;
@@ -1900,7 +1903,7 @@ function MapInit({ ready, center, zoom }) {
 }
 
 /* ================= App ================= */
-const FALLBACK_ORDER = ['positron', 'voyager', 'osm'];
+const FALLBACK_ORDER = ['sat', 'osm']; // a failing provider falls back to the other one
 const DEF_SETTINGS = { buildCost: 6.5, lifespan: 40, center: DI_AN, zoom: 13, overlays: [] };
 const clearQuanly = () => { if (/^#quanly$/i.test(location.hash) && history.replaceState) history.replaceState(null, '', location.pathname + location.search); };
 const isMissingTable = e => !!e && (e.code === 'PGRST205' || e.code === '42P01' || /does not exist|Could not find the table/i.test(String(e.message || '')));
